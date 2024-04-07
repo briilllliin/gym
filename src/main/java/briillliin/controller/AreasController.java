@@ -1,59 +1,56 @@
 package briillliin.controller;
 
-
-import briillliin.controller.errors.AreasNotFoundException;
-import briillliin.entity.Areas;
-import briillliin.repository.AreasRepository;
+import briillliin.dto.AreasDTO;
+import briillliin.services.AreasService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
+@RequestMapping("/areas")
+@Tag(name="Контроллер филиалов", description="Операции CRUD для филиалов")
 public class AreasController {
-    
-    private final AreasRepository areasRepository;
 
-    public AreasController(AreasRepository areasRepository) {
-        this.areasRepository = areasRepository;
+    private final AreasService areasService;
+
+    @Operation(summary = "Получить все филиалы", description = "Получить список всех филиалов")
+    @GetMapping
+    public ResponseEntity<List<AreasDTO>> getAllAreas() {
+        List<AreasDTO> areas = areasService.getAll();
+        return ResponseEntity.ok().body(areas);
     }
 
-
-    @GetMapping("/areas")
-    List<Areas> all() {
-        return areasRepository.findAll();
+    @Operation(summary = "Создать новый филиал", description = "Создать новый филиал")
+    @PostMapping
+    public ResponseEntity<AreasDTO> newArea(@RequestBody AreasDTO newArea) {
+        AreasDTO createdArea = areasService.addAreas(newArea);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdArea);
     }
 
-    @PostMapping("/areas")
-    Areas newArea(@RequestBody Areas newArea) {
-        return areasRepository.save(newArea);
+    @Operation(summary = "Получить филиал по ID", description = "Получить филиал по его ID")
+    @GetMapping("/{id}")
+    public ResponseEntity<AreasDTO> getAreaById(@PathVariable Long id) {
+        AreasDTO area = areasService.getAreasById(id);
+        return ResponseEntity.ok().body(area);
     }
 
-
-    @GetMapping("/areas/{id}")
-    Areas one(@PathVariable Long id) {
-
-        return areasRepository.findById(id)
-                .orElseThrow(() -> new AreasNotFoundException(id));
+    @Operation(summary = "Обновить филиал", description = "Обновить существующий филиал")
+    @PutMapping("/{id}")
+    public ResponseEntity<AreasDTO> updateArea(@RequestBody AreasDTO newArea, @PathVariable Long id) {
+        AreasDTO updatedArea = areasService.updateAreas(id, newArea);
+        return ResponseEntity.ok().body(updatedArea);
     }
 
-
-    @PutMapping("/areas/{id}")
-    Areas replaceClient(@RequestBody Areas newArea, @PathVariable Long id) {
-
-        return areasRepository.findById(id)
-                .map(area -> {
-                    area.setName(newArea.getName());
-                    return areasRepository.save(area);
-                })
-                .orElseGet(() -> {
-                    newArea.setId(id);
-                    return areasRepository.save(newArea);
-                });
-    }
-
-
-    @DeleteMapping("/areas/{id}")
-    void deleteClient(@PathVariable Long id) {
-        areasRepository.deleteById(id);
+    @Operation(summary = "Удалить филиал", description = "Удалить филиал по его ID")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteArea(@PathVariable Long id) {
+        areasService.deleteAreasById(id);
+        return ResponseEntity.noContent().build();
     }
 }

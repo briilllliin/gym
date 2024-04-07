@@ -1,78 +1,56 @@
 package briillliin.controller;
 
-import briillliin.controller.errors.ActivitiesNotFoundException;
-import briillliin.entity.Activities;
-import briillliin.entity.Areas;
-import briillliin.entity.Trainers;
-import briillliin.repository.ActivitiesRepository;
-import briillliin.repository.AreasRepository;
-import briillliin.repository.TrainersRepository;
+import briillliin.dto.ActivitiesDTO;
+import briillliin.services.serviceImpl.ActivitiesServiceImpl;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
-
+@RequiredArgsConstructor
 @RestController
+@RequestMapping("/activities")
+@Tag(name="Контроллер мероприятий", description="Операции CRUD для мероприятий")
 public class ActivitiesController {
-    
-    private final ActivitiesRepository activitiesRepository;
-    private final TrainersRepository trainersRepository;
-    private final AreasRepository areasRepository;
 
+    private final ActivitiesServiceImpl activitiesService;
 
-    public ActivitiesController(ActivitiesRepository activitiesRepository, TrainersRepository trainersRepository,
-                                AreasRepository areasRepository) {
-        this.activitiesRepository = activitiesRepository;
-        this.trainersRepository = trainersRepository;
-        this.areasRepository = areasRepository;
+    @Operation(summary = "Получить все мероприятия", description = "Получить список всех мероприятий")
+    @GetMapping
+    public ResponseEntity<List<ActivitiesDTO>> getAllActivities() {
+        List<ActivitiesDTO> activities = activitiesService.getAll();
+        return ResponseEntity.ok().body(activities);
     }
 
-    @GetMapping("/activities")
-    List<Activities> all() {
-        return activitiesRepository.findAll();
+    @Operation(summary = "Создать новое мероприятие", description = "Создать новое мероприятие")
+    @PostMapping
+    public ResponseEntity<Void> newActivity(@RequestBody ActivitiesDTO newActivity) {
+        activitiesService.createActivity(newActivity);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-
-    @PostMapping("/activities")
-    public ResponseEntity<?> newActivity(@RequestBody Activities newActivity) {
-        activitiesRepository.save(newActivity);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+    @Operation(summary = "Получить мероприятие по ID", description = "Получить мероприятие по его ID")
+    @GetMapping("/{id}")
+    public ResponseEntity<ActivitiesDTO> getActivityById(@PathVariable Long id) {
+        ActivitiesDTO activity = activitiesService.getActivitiesById(id);
+        return ResponseEntity.ok().body(activity);
     }
 
-
-    @GetMapping("/activities/{id}")
-    Activities one(@PathVariable Long id) {
-
-        return activitiesRepository.findById(id)
-                .orElseThrow(() -> new ActivitiesNotFoundException(id));
+    @Operation(summary = "Обновить мероприятие", description = "Обновить существующее мероприятие")
+    @PutMapping("/{id}")
+    public ResponseEntity<ActivitiesDTO> updateActivity(@RequestBody ActivitiesDTO newActivity, @PathVariable Long id) {
+        ActivitiesDTO updatedActivity = activitiesService.updateActivities(id, newActivity);
+        return ResponseEntity.ok().body(updatedActivity);
     }
 
-
-    @PutMapping("/activities/{id}")
-    Activities replaceClient(@RequestBody Activities newActivity, @PathVariable Long id) {
-
-        Optional<Trainers> trainer = trainersRepository.findById(newActivity.getTrainer().getId());
-        Optional<Areas> area = areasRepository.findById(newActivity.getArea().getId());
-
-        return activitiesRepository.findById(id)
-                .map(activity -> {
-                    activity.setName(newActivity.getName());
-                    activity.setTrainer(trainer.get());
-                    activity.setArea(area.get());
-                    return activitiesRepository.save(activity);
-                })
-                .orElseGet(() -> {
-                    newActivity.setId(id);
-                    return activitiesRepository.save(newActivity);
-                });
-    }
-
-
-    @DeleteMapping("/activities/{id}")
-    void deleteClient(@PathVariable Long id) {
-        activitiesRepository.deleteById(id);
+    @Operation(summary = "Удалить мероприятие", description = "Удалить мероприятие по его ID")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteActivity(@PathVariable Long id) {
+        activitiesService.deleteActivitiesById(id);
+        return ResponseEntity.noContent().build();
     }
 }

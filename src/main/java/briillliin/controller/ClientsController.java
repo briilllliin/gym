@@ -1,63 +1,56 @@
 package briillliin.controller;
 
-import briillliin.controller.errors.ClientsNotFoundException;
-import briillliin.entity.Clients;
-import briillliin.repository.ClientsRepository;
+import briillliin.dto.ClientsDTO;
+import briillliin.services.ClientsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
+@RequiredArgsConstructor
 @RestController
+@RequestMapping("/clients")
+@Tag(name="Контроллер клиентов", description="Операции CRUD для клиентов")
 public class ClientsController {
-    
-    private final ClientsRepository clientsRepository;
 
+    private final ClientsService clientsService;
 
-    public ClientsController(ClientsRepository clientsRepository) {
-        this.clientsRepository = clientsRepository;
+    @Operation(summary = "Получить всех клиентов", description = "Получить список всех клиентов")
+    @GetMapping
+    public ResponseEntity<List<ClientsDTO>> getAllClients() {
+        List<ClientsDTO> clients = clientsService.getAll();
+        return ResponseEntity.ok().body(clients);
     }
 
-
-    @GetMapping("/clients")
-    List<Clients> all() {
-        return clientsRepository.findAll();
+    @Operation(summary = "Создать нового клиента", description = "Создать нового клиента")
+    @PostMapping
+    public ResponseEntity<ClientsDTO> newClient(@RequestBody ClientsDTO newClient) {
+        ClientsDTO createdClient = clientsService.addClients(newClient);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdClient);
     }
 
-
-    @PostMapping("/clients")
-    Clients newClient(@RequestBody Clients newClient) {
-        return clientsRepository.save(newClient);
+    @Operation(summary = "Получить клиента по ID", description = "Получить клиента по его ID")
+    @GetMapping("/{id}")
+    public ResponseEntity<ClientsDTO> getClientById(@PathVariable Long id) {
+        ClientsDTO client = clientsService.getClientsById(id);
+        return ResponseEntity.ok().body(client);
     }
 
-
-    @GetMapping("/clients/{id}")
-    Clients one(@PathVariable Long id) {
-
-        return clientsRepository.findById(id)
-                .orElseThrow(() -> new ClientsNotFoundException(id));
+    @Operation(summary = "Обновить клиента", description = "Обновить существующего клиента")
+    @PutMapping("/{id}")
+    public ResponseEntity<ClientsDTO> updateClient(@RequestBody ClientsDTO newClient, @PathVariable Long id) {
+        ClientsDTO updatedClient = clientsService.updateClients(id, newClient);
+        return ResponseEntity.ok().body(updatedClient);
     }
 
-
-    @PutMapping("/clients/{id}")
-    Clients replaceClient(@RequestBody Clients newClient, @PathVariable Long id) {
-
-        return clientsRepository.findById(id)
-                .map(client -> {
-                    client.setName(newClient.getName());
-                    client.setPassport(newClient.getPassport());
-                    client.setPhone(newClient.getPhone());
-                    return clientsRepository.save(client);
-                })
-                .orElseGet(() -> {
-                    newClient.setId(id);
-                    return clientsRepository.save(newClient);
-                });
-    }
-
-
-    @DeleteMapping("/clients/{id}")
-    void deleteClient(@PathVariable Long id) {
-        clientsRepository.deleteById(id);
+    @Operation(summary = "Удалить клиента", description = "Удалить клиента по его ID")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
+        clientsService.deleteClientsById(id);
+        return ResponseEntity.noContent().build();
     }
 }

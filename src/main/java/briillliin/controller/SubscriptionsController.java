@@ -1,77 +1,56 @@
 package briillliin.controller;
 
-
-import briillliin.controller.errors.SubscriptionsNotFoundException;
-import briillliin.entity.Activities;
-import briillliin.entity.Clients;
-import briillliin.entity.Subscriptions;
-import briillliin.repository.ActivitiesRepository;
-import briillliin.repository.ClientsRepository;
-import briillliin.repository.SubscriptionsRepository;
+import briillliin.dto.SubscriptionsDTO;
+import briillliin.services.SubscriptionsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
-
+@RequiredArgsConstructor
 @RestController
+@RequestMapping("/subscriptions")
+@Tag(name="Контроллер абонементов", description="Операции CRUD для абонементов")
 public class SubscriptionsController {
 
-    private final SubscriptionsRepository subscriptionsRepository;
-    private final ActivitiesRepository activitiesRepository;
-    private final ClientsRepository clientsRepository;
+    private final SubscriptionsService subscriptionsService;
 
-
-    public SubscriptionsController(SubscriptionsRepository subscriptionsRepository, ActivitiesRepository activitiesRepository, ClientsRepository clientsRepository) {
-        this.subscriptionsRepository = subscriptionsRepository;
-        this.activitiesRepository = activitiesRepository;
-        this.clientsRepository = clientsRepository;
+    @Operation(summary = "Получить все абонементы", description = "Получить список всех абонементов")
+    @GetMapping
+    public ResponseEntity<List<SubscriptionsDTO>> getAllSubscriptions() {
+        List<SubscriptionsDTO> subscriptions = subscriptionsService.getAll();
+        return ResponseEntity.ok().body(subscriptions);
     }
 
-
-    @GetMapping("/subscriptions")
-    List<Subscriptions> all() {
-        return subscriptionsRepository.findAll();
+    @Operation(summary = "Создать новый абонемент", description = "Создать новый абонемент")
+    @PostMapping
+    public ResponseEntity<SubscriptionsDTO> newSubscription(@RequestBody SubscriptionsDTO newSubscription) {
+        SubscriptionsDTO createdSubscription = subscriptionsService.addSubscriptions(newSubscription);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdSubscription);
     }
 
-
-    @PostMapping("/subscriptions")
-    Subscriptions newSubscription(@RequestBody Subscriptions newSubscription) {
-        return subscriptionsRepository.save(newSubscription);
+    @Operation(summary = "Получить абонемент по ID", description = "Получить абонемент по его ID")
+    @GetMapping("/{id}")
+    public ResponseEntity<SubscriptionsDTO> getSubscriptionById(@PathVariable Long id) {
+        SubscriptionsDTO subscription = subscriptionsService.getSubscriptionsById(id);
+        return ResponseEntity.ok().body(subscription);
     }
 
-
-    @GetMapping("/subscriptions/{id}")
-    Subscriptions one(@PathVariable Long id) {
-
-        return subscriptionsRepository.findById(id)
-                .orElseThrow(() -> new SubscriptionsNotFoundException(id));
+    @Operation(summary = "Обновить абонемент", description = "Обновить существующий абонемент")
+    @PutMapping("/{id}")
+    public ResponseEntity<SubscriptionsDTO> updateSubscription(@RequestBody SubscriptionsDTO newSubscription, @PathVariable Long id) {
+        SubscriptionsDTO updatedSubscription = subscriptionsService.updateSubscriptions(id, newSubscription);
+        return ResponseEntity.ok().body(updatedSubscription);
     }
 
-
-    @PutMapping("/subscriptions/{id}")
-    Subscriptions replaceClient(@RequestBody Subscriptions newSubscription, @PathVariable Long id) {
-
-        Optional<Activities> activity = activitiesRepository.findById(newSubscription.getActivity().getId());
-        Optional<Clients> client = clientsRepository.findById(newSubscription.getClient().getId());
-
-        return subscriptionsRepository.findById(id)
-                .map(subscription -> {
-                    subscription.setClient(client.get());
-                    subscription.setActivity(activity.get());
-                    subscription.setDate(newSubscription.getDate());
-                    subscription.setPrice(newSubscription.getPrice());
-                    return subscriptionsRepository.save(subscription);
-                })
-                .orElseGet(() -> {
-                    newSubscription.setId(id);
-                    return subscriptionsRepository.save(newSubscription);
-                });
-    }
-
-
-    @DeleteMapping("/subscriptions/{id}")
-    void deleteClient(@PathVariable Long id) {
-        subscriptionsRepository.deleteById(id);
+    @Operation(summary = "Удалить абонемент", description = "Удалить абонемент по его ID")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSubscription(@PathVariable Long id) {
+        subscriptionsService.deleteSubscriptionsById(id);
+        return ResponseEntity.noContent().build();
     }
 }

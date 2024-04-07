@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  postgres:
+    container_name: gym_postgres
+    image: postgres:14.11-alpine3.19
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: Fitness
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  gym:
+    depends_on:
+      - postgres
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_APPLICATION_JSON: '{
+          "spring.datasource.url" : "jdbc:postgresql://postgres:5432/Fitness",
+          "spring.datasource.driver-class-name" : "org.postgresql.Driver",
+          "spring.datasource.username" : "postgres",
+          "spring.datasource.password" : "123",
+          "spring.datasource.hikari.maximum-pool-size" : "20",
+          "spring.jpa.hibernate.ddl-auto" : "update",
+          "spring.application.name" : "gym",
+          "spring.thymeleaf.prefix" : "classpath:/templates/",
+          "spring.thymeleaf.suffix" : ".html"
+      }'
+    volumes:
+      - .m2:/root/.m2
+
+volumes:
+  pgdata:
+    driver: local
